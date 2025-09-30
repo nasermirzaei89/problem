@@ -1,6 +1,7 @@
 package problem
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,11 +13,11 @@ type Problem struct {
 	Status     int
 	Detail     string
 	Instance   string
-	Extensions map[string]interface{}
+	Extensions map[string]any
 }
 
 func (p Problem) MarshalJSON() ([]byte, error) {
-	c := make(map[string]interface{})
+	c := make(map[string]any)
 
 	c["type"] = "about:blank"
 	if p.Type != "" {
@@ -92,10 +93,16 @@ func WithStatus(status int) Option {
 	}
 }
 
-func WithExtension(key string, val interface{}) Option {
+func WithInstance(instance string) Option {
+	return func(e *Problem) {
+		e.Instance = instance
+	}
+}
+
+func WithExtension(key string, val any) Option {
 	return func(e *Problem) {
 		if e.Extensions == nil {
-			e.Extensions = make(map[string]interface{})
+			e.Extensions = make(map[string]any)
 		}
 
 		e.Extensions[key] = val
@@ -118,15 +125,15 @@ func SetLogger(l Logger) {
 	logger = l
 }
 
-func InternalServerError(err error, options ...Option) Problem {
+func InternalServerError(ctx context.Context, err error, options ...Option) Problem {
 	e := Problem{
 		Status:     http.StatusInternalServerError,
 		Title:      "Unexpected error occurred.",
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
 	}
 
 	if logger != nil {
-		id := logger(err)
+		id := logger(ctx, err)
 
 		if id != "" {
 			WithExtension("tracking_code", id)(&e)
@@ -148,7 +155,7 @@ func BadRequest(detail string, options ...Option) Problem {
 		Status:     http.StatusBadRequest,
 		Title:      "Invalid request inputs received.",
 		Detail:     detail,
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
 	}
 
 	for i := range options {
@@ -163,7 +170,7 @@ func Unauthorized(detail string, options ...Option) Problem {
 		Status:     http.StatusUnauthorized,
 		Title:      "Unauthorized request received.",
 		Detail:     detail,
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
 	}
 
 	for i := range options {
@@ -178,7 +185,7 @@ func Forbidden(detail string, options ...Option) Problem {
 		Status:     http.StatusForbidden,
 		Title:      "You are not allowed to do this request.",
 		Detail:     detail,
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
 	}
 
 	for i := range options {
@@ -193,7 +200,7 @@ func NotFound(detail string, options ...Option) Problem {
 		Status:     http.StatusNotFound,
 		Title:      "The resource not found.",
 		Detail:     detail,
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
 	}
 
 	for i := range options {
@@ -208,7 +215,37 @@ func Conflict(detail string, options ...Option) Problem {
 		Status:     http.StatusConflict,
 		Title:      "There is a conflict in your request.",
 		Detail:     detail,
-		Extensions: map[string]interface{}{},
+		Extensions: make(map[string]any),
+	}
+
+	for i := range options {
+		options[i](&e)
+	}
+
+	return e
+}
+
+func UnprocessableEntity(detail string, options ...Option) Problem {
+	e := Problem{
+		Status:     http.StatusUnprocessableEntity,
+		Title:      "The request was well-formed but contains invalid data.",
+		Detail:     detail,
+		Extensions: make(map[string]any),
+	}
+
+	for i := range options {
+		options[i](&e)
+	}
+
+	return e
+}
+
+func TooManyRequests(detail string, options ...Option) Problem {
+	e := Problem{
+		Status:     http.StatusTooManyRequests,
+		Title:      "Too many requests.",
+		Detail:     detail,
+		Extensions: make(map[string]any),
 	}
 
 	for i := range options {

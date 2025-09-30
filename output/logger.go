@@ -1,23 +1,23 @@
 package output
 
 import (
-	"fmt"
+	"context"
 	"log"
 
 	"github.com/nasermirzaei89/problem"
 )
 
 func New() problem.Logger {
-	return func(err error) string {
-		log.Println(fmt.Sprintf("%+v", err))
+	return func(_ context.Context, err error) string {
+		log.Printf("%+v\n", err)
 
 		return ""
 	}
 }
 
 func NewWithLogger(l *log.Logger) problem.Logger {
-	return func(err error) string {
-		l.Println(fmt.Sprintf("%+v", err))
+	return func(_ context.Context, err error) string {
+		l.Printf("%+v\n", err)
 
 		return ""
 	}

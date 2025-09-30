@@ -1,9 +1,11 @@
 package problem
 
-type Logger func(err error) (trackingCode string)
+import "context"
+
+type Logger func(ctx context.Context, err error) (trackingCode string)
 
 func NewVoidLogger() Logger {
-	return func(err error) string {
+	return func(_ context.Context, _ error) string {
 		return ""
 	}
 }
